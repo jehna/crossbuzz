@@ -1,33 +1,46 @@
-fn main() {}
+mod string_to_places;
+use std::thread;
 
-mod direction {
-    #[derive(PartialEq, Clone)]
-    pub(crate) enum Direction {
-        Horizontal,
-        Vertical,
-    }
-}
-use direction::Direction::{self, *};
+use string_to_places::*;
 
-#[derive(Clone, Copy, PartialEq)]
-enum Character {
-    Empty,
-    Letter(char),
-}
+fn main() {
+    let builder = thread::Builder::new()
+        .name("reductor".into())
+        .stack_size(1024 * 1024 * 1024);
 
-impl Default for Character {
-    fn default() -> Self {
-        Character::Empty
-    }
+    let handler = builder
+        .spawn(|| {
+            do_solve();
+        })
+        .unwrap();
+
+    handler.join().unwrap();
 }
 
-#[derive(Clone)]
-struct WordPlace {
-    chars: Vec<Character>,
-    x: usize,
-    y: usize,
-    dir: Direction,
+fn do_solve() {
+    let wordlist = read_wordlist();
+    let input = "
+        xxxx
+        xxxx
+        xxxx
+        xxxx
+    ";
+
+    let input_places = input_places_from_visual(trim_indent_and_whitespace(input));
+    let result = pretty_print(solver::solve(&wordlist, input_places));
+    println!("{}", result);
 }
+
+fn read_wordlist<'a>() -> Vec<String> {
+    let filename = "words.txt";
+    let contents = std::fs::read_to_string(filename).expect("Could not read file");
+    contents.lines().map(|s| s.to_uppercase()).collect()
+}
+
+mod direction;
+use direction::Direction::{self};
+use word_place::{Character, WordPlace};
+mod word_place;
 
 impl WordPlace {
     fn to_string(&self) -> String {
@@ -41,102 +54,17 @@ impl WordPlace {
     }
 }
 
-enum SolveState {
-    Solved(Vec<WordPlace>),
-    Unsolved,
-}
-
-fn solve(wordlist: &Vec<impl AsRef<str>>, word_places: Vec<WordPlace>) -> SolveState {
-    if is_solved(&word_places) {
-        return SolveState::Solved(word_places);
-    }
-
-    let best_candidate = find_best_candidate(&wordlist, &word_places);
-    for word in words_that_fit(&wordlist, &best_candidate) {
-        let new_word_places = place_word(&word_places, &best_candidate, &word);
-        match solve(wordlist, new_word_places) {
-            SolveState::Solved(solution) => return SolveState::Solved(solution),
-            SolveState::Unsolved => continue,
-        }
-    }
-    return SolveState::Unsolved;
-}
-
-fn is_solved(word_places: &Vec<WordPlace>) -> bool {
-    word_places.iter().all(|place| {
-        place.chars.iter().all(|c| match c {
-            Character::Empty => false,
-            Character::Letter(_) => true,
-        })
-    })
-}
-
-fn words_that_fit<'a>(wordlist: &'a Vec<impl AsRef<str>>, word_place: &WordPlace) -> Vec<&'a str> {
-    wordlist
-        .iter()
-        .map(|word| word.as_ref())
-        .filter(|word| word.len() == word_place.chars.len())
-        .collect()
-}
-
-fn place_word(word_places: &Vec<WordPlace>, target: &WordPlace, word: &str) -> Vec<WordPlace> {
-    let mut new_word_places = word_places.clone().to_vec();
-
-    for (i, c) in word.chars().enumerate() {
-        let x = target.x + if target.dir == Horizontal { i } else { 0 };
-        let y = target.y + if target.dir == Vertical { i } else { 0 };
-
-        for place in new_word_places.iter_mut() {
-            for i in 0..place.chars.len() {
-                let char_x = place.x + if place.dir == Horizontal { i } else { 0 };
-                let char_y = place.y + if place.dir == Vertical { i } else { 0 };
-
-                if char_x == x && char_y == y {
-                    if let Character::Letter(l) = place.chars[i] {
-                        assert!(l == c, "Overlapping words");
-                    } else {
-                        place.chars[i] = Character::Letter(c);
-                    }
-                }
-            }
-        }
-    }
-    new_word_places
-}
-
-fn find_best_candidate<'a>(
-    wordlist: &Vec<impl AsRef<str>>,
-    word_places: &'a Vec<WordPlace>,
-) -> &'a WordPlace {
-    word_places
-        .iter()
-        .reduce(|a, b| {
-            if a.chars.iter().all(|c| c != &Character::Empty) {
-                return b;
-            }
-            if b.chars.iter().all(|c| c != &Character::Empty) {
-                return a;
-            }
-
-            let a_words = words_that_fit(wordlist, a);
-            let b_words = words_that_fit(wordlist, b);
-            if a_words.len() > b_words.len() {
-                a
-            } else {
-                b
-            }
-        })
-        .expect("Don't call with empty word_places")
-}
+mod solver;
 
 #[cfg(test)]
 mod tests {
-    use crate::{solve, Character, SolveState::*, WordPlace, *};
-
     use self::direction::Direction;
+    use crate::{
+        solver::solve, solver::SolveState::*, word_place::Character, word_place::WordPlace, *,
+    };
 
-    fn empty_place(direction: Direction) -> WordPlace {
-        WordPlace {
+    fn empty_place(direction: Direction) -> word_place::WordPlace {
+        word_place::WordPlace {
             chars: vec![Character::Empty; 5],
             x: 0,
             y: 0,
@@ -144,17 +72,145 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_places_simple_words() {
-        let words = vec!["hello"];
-        let places = vec![empty_place(Horizontal), empty_place(Vertical)];
+    fn empty_place_pos(x: usize, y: usize, direction: Direction) -> word_place::WordPlace {
+        word_place::WordPlace {
+            chars: vec![Character::Empty; 5],
+            x,
+            y,
+            dir: direction,
+        }
+    }
 
-        match solve(&words, places) {
-            Solved(result) => {
-                assert_eq!(result[0].to_string(), "hello");
-                assert_eq!(result[1].to_string(), "hello");
+    fn assert_matches(result: solver::SolveState, expected: Vec<&str>) {
+        match result {
+            Solved(solution) => {
+                for (i, word) in expected.iter().enumerate() {
+                    assert_eq!(solution[i].to_string(), *word);
+                }
             }
             Unsolved => panic!("Expected Solved, got Unsolved"),
         }
+    }
+
+    fn expect_solved<'a>(input: &str, expected: &str, wordlist: impl AsRef<[&'a str]>) {
+        let input_places = input_places_from_visual(trim_indent_and_whitespace(input));
+        let result = pretty_print(solver::solve(&wordlist.as_ref().to_vec(), input_places));
+        let expected_trimmed = trim_indent_and_whitespace(expected);
+        assert_eq!(result, expected_trimmed);
+    }
+
+    #[test]
+    fn places_simple_words() {
+        expect_solved(
+            "
+                xxxxx
+                x....
+                x....
+                x....
+                x....
+            ",
+            "
+                HELLO
+                E....
+                L....
+                L....
+                O....
+            ",
+            ["HELLO"],
+        );
+    }
+
+    #[test]
+    fn discards_words_that_dont_fit() {
+        expect_solved(
+            "
+                xxxxx
+                x....
+                x....
+                x....
+                x....
+            ",
+            "
+                WORLD
+                O....
+                R....
+                L....
+                D....
+            ",
+            ["NOPE", "WORLD"],
+        );
+    }
+
+    #[test]
+    fn finds_different_word_to_match_place() {
+        expect_solved(
+            "
+                xxxxx
+                .x...
+                .x...
+                .x...
+                .x...
+            ",
+            "
+                HELLO
+                .M...
+                .P...
+                .T...
+                .Y...
+            ",
+            ["HELLO", "EMPTY"],
+        );
+    }
+
+    #[test]
+    fn does_backtrace() {
+        expect_solved(
+            "
+                xxxxx
+                ....x
+                ....x
+                xxxxx
+                ....x
+            ",
+            "
+                HELLO
+                ....T
+                ....H
+                THERE
+                ....R
+            ",
+            ["HELLO", "ODDLY", "OTHER", "THERE"],
+        );
+    }
+
+    #[test]
+    fn returns_unsolved_if_cannot_be_solved() {
+        expect_solved(
+            "
+                xxxxx
+                ....x
+                ....x
+                xxxxx
+                ....x
+            ",
+            "Unsolved",
+            ["HELLO", "ODDLY", "THERE"],
+        );
+    }
+
+    #[test]
+    fn needs_to_result_in_correct_words_in_all_directions() {
+        expect_solved(
+            "
+                xxx
+                xxx
+                xxx
+            ",
+            "
+                ODD
+                DIY
+                DYE",
+            ["ODD", "DIY", "DYE"],
+        );
     }
 }
