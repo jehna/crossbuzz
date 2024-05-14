@@ -96,7 +96,7 @@ pub(crate) fn to_world_places(chars: Vec<Char>) -> Vec<WordPlace> {
                 }
                 current_place = None;
             }
-            _ => {
+            'x' => {
                 if current_place.is_none() {
                     current_place = Some(WordPlace {
                         chars: vec![Character::Empty],
@@ -106,6 +106,22 @@ pub(crate) fn to_world_places(chars: Vec<Char>) -> Vec<WordPlace> {
                     });
                 } else {
                     current_place.as_mut().unwrap().chars.push(Character::Empty);
+                }
+            }
+            letter => {
+                if current_place.is_none() {
+                    current_place = Some(WordPlace {
+                        chars: vec![Character::Letter(letter)],
+                        x: c.x,
+                        y: c.y,
+                        dir: c.dir,
+                    });
+                } else {
+                    current_place
+                        .as_mut()
+                        .unwrap()
+                        .chars
+                        .push(Character::Letter(letter));
                 }
             }
         }

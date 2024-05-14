@@ -1,6 +1,7 @@
 use crate::word_place::Character;
 use crate::word_place::WordPlace;
 use crate::Direction::{Horizontal, Vertical};
+use rayon::prelude::*;
 
 #[derive(PartialEq, Debug)]
 pub(crate) enum SolveState {
@@ -43,7 +44,7 @@ pub(crate) fn words_that_fit<'a>(
     wordlist
         .iter()
         .map(|word| word.as_ref())
-        .filter(|word| word.len() == word_place.chars.len())
+        .filter(|word| word.chars().count() == word_place.chars.len())
         .filter(|word| {
             word.chars().enumerate().all(|(i, c)| {
                 word_place.chars[i] == Character::Empty
@@ -103,6 +104,11 @@ pub(crate) fn find_best_candidate<'a>(
             }
             if b.chars.iter().all(|c| c != &Character::Empty) {
                 return a;
+            }
+            if a.chars.len() > b.chars.len() {
+                return a;
+            } else if a.chars.len() < b.chars.len() {
+                return b;
             }
 
             let a_words = words_that_fit(wordlist, a);
