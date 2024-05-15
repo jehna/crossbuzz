@@ -20,14 +20,17 @@ fn main() {
 fn do_solve() {
     let wordlist = read_wordlist();
     let input = "
-        xxxx
-        xxxx
-        xxxx
-        xxxx
+        xxxxxxxxx.xxxxx
+        ...xxx.xxxx.IPO
+        REAKTOR.xxxx...
+        xxxxxxxx.JAAHAS
+        xxxx.xxxxxxxxxx
+        xxxx.xxxxx.xxxx
+        xxxx.xxxxx.xxxx
     ";
 
     let input_places = input_places_from_visual(trim_indent_and_whitespace(input));
-    let result = pretty_print(solver::solve(&wordlist, input_places));
+    let result = pretty_print(solver::solve(wordlist, input_places));
     println!("{}", result);
 }
 
@@ -94,7 +97,14 @@ mod tests {
 
     fn expect_solved<'a>(input: &str, expected: &str, wordlist: impl AsRef<[&'a str]>) {
         let input_places = input_places_from_visual(trim_indent_and_whitespace(input));
-        let result = pretty_print(solver::solve(&wordlist.as_ref().to_vec(), input_places));
+        let result = pretty_print(solver::solve(
+            wordlist
+                .as_ref()
+                .into_iter()
+                .map(|s| s.to_string())
+                .collect(),
+            input_places,
+        ));
         let expected_trimmed = trim_indent_and_whitespace(expected);
         assert_eq!(result, expected_trimmed);
     }
