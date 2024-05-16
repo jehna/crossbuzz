@@ -41,59 +41,13 @@ fn read_wordlist<'a>() -> Vec<String> {
 }
 
 mod direction;
-use direction::Direction::{self};
-use word_place::{Character, WordPlace};
 mod word_place;
-
-impl WordPlace {
-    fn to_string(&self) -> String {
-        self.chars
-            .iter()
-            .map(|c| match c {
-                Character::Empty => ' ',
-                Character::Letter(l) => *l,
-            })
-            .collect()
-    }
-}
 
 mod solver;
 
 #[cfg(test)]
 mod tests {
-    use self::direction::Direction;
-    use crate::{
-        solver::solve, solver::SolveState::*, word_place::Character, word_place::WordPlace, *,
-    };
-
-    fn empty_place(direction: Direction) -> word_place::WordPlace {
-        word_place::WordPlace {
-            chars: vec![Character::Empty; 5],
-            x: 0,
-            y: 0,
-            dir: direction,
-        }
-    }
-
-    fn empty_place_pos(x: usize, y: usize, direction: Direction) -> word_place::WordPlace {
-        word_place::WordPlace {
-            chars: vec![Character::Empty; 5],
-            x,
-            y,
-            dir: direction,
-        }
-    }
-
-    fn assert_matches(result: solver::SolveState, expected: Vec<&str>) {
-        match result {
-            Solved(solution) => {
-                for (i, word) in expected.iter().enumerate() {
-                    assert_eq!(solution[i].to_string(), *word);
-                }
-            }
-            Unsolved => panic!("Expected Solved, got Unsolved"),
-        }
-    }
+    use crate::*;
 
     fn expect_solved<'a>(input: &str, expected: &str, wordlist: impl AsRef<[&'a str]>) {
         let input_places = input_places_from_visual(trim_indent_and_whitespace(input));

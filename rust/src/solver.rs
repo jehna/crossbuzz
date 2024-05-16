@@ -1,6 +1,6 @@
+use crate::direction::Direction::{Horizontal, Vertical};
 use crate::word_place::Character;
 use crate::word_place::WordPlace;
-use crate::Direction::{Horizontal, Vertical};
 
 #[derive(PartialEq, Debug)]
 pub(crate) enum SolveState {
