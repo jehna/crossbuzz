@@ -10,4 +10,5 @@ export default defineConfig({
       "top-level-await": true, // Neeced for wasm
     },
   },
+  base: "/crossbuzz",
 });
