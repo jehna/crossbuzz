@@ -9,19 +9,12 @@ function App() {
   const [grid, setGrid] = useState(() =>
     toGrid(
       `
-    xxxxxxxxx.xxxxx
-    ...xxx.xxxx.xxx
-    MUOKKAA.xxxx...
-    xxxxxxxx.xxxxxx
-    xxxx.xxxxxxxxxx
-    xxxx.SANAT.xxxx
-    xxxx.xxxxx.xxxx
-  ` &&
-        `
-xxxx
-xxxx
-xxxx
-xxxx`
+    ...TEE.xxx
+    xxxxxxx.xx
+    xxxxxxxx.x
+    xxxx.xxxxx
+    xxxx.SANAT
+  `
     )
   );
 
