@@ -1,4 +1,4 @@
-![Crossbuzz logo](https://raw.githubusercontent.com/jehna/crossbuzz/master/logo.svg)
+![Crossbuzz logo](https://raw.githubusercontent.com/jehna/crossbuzz/master/logo.svg?)
 
 # Crossbuzz
 > A crossword puzzle generator
