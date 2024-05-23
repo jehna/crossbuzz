@@ -1,3 +1,4 @@
+
 .row {
   display: flex;
   justify-content: center;
@@ -35,4 +36,10 @@ button {
   color: white;
   border-radius: 5px;
   margin: 10px auto;
+  margin-right: 10px;
+  box-shadow: 0 0 5px #00000011
+}
+
+.generate-button {
+  border: 1px solid orange;
 }

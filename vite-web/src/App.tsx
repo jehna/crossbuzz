@@ -85,6 +85,7 @@ function App() {
         </div>
         <div>
           <button
+            className="generate-button"
             onClick={() => {
               const gridText = grid
                 .map((row) =>
